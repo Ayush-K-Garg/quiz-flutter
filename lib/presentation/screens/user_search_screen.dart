@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:quiz/core/services/user_api.dart';
 
@@ -14,16 +15,20 @@ class _UserSearchScreenState extends State<UserSearchScreen> {
   List<dynamic> users = [];
   bool loading = false;
 
-  void search() async {
-    final query = searchController.text.trim();
-    if (query.isEmpty) return;
+  Timer? debounceTimer;
+
+  void search(String query) async {
+    if (query.trim().isEmpty) {
+      loadSuggestedUsers(); // fallback to suggestions if field is cleared
+      return;
+    }
 
     setState(() {
       loading = true;
     });
 
     try {
-      final result = await userApi.searchUsers(query);
+      final result = await userApi.searchUsers(query.trim());
       setState(() {
         users = result;
       });
@@ -35,6 +40,13 @@ class _UserSearchScreenState extends State<UserSearchScreen> {
 
     setState(() {
       loading = false;
+    });
+  }
+
+  void onSearchChanged(String query) {
+    debounceTimer?.cancel();
+    debounceTimer = Timer(const Duration(milliseconds: 400), () {
+      search(query);
     });
   }
 
@@ -62,7 +74,17 @@ class _UserSearchScreenState extends State<UserSearchScreen> {
   @override
   void initState() {
     super.initState();
+    searchController.addListener(() {
+      onSearchChanged(searchController.text);
+    });
     loadSuggestedUsers();
+  }
+
+  @override
+  void dispose() {
+    debounceTimer?.cancel();
+    searchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -75,12 +97,14 @@ class _UserSearchScreenState extends State<UserSearchScreen> {
           children: [
             TextField(
               controller: searchController,
-              onSubmitted: (_) => search(),
               decoration: InputDecoration(
                 labelText: 'Search users by name or email',
                 suffixIcon: IconButton(
-                  icon: const Icon(Icons.search),
-                  onPressed: search,
+                  icon: const Icon(Icons.clear),
+                  onPressed: () {
+                    searchController.clear();
+                    loadSuggestedUsers();
+                  },
                 ),
               ),
             ),
@@ -89,20 +113,23 @@ class _UserSearchScreenState extends State<UserSearchScreen> {
               const Center(child: CircularProgressIndicator())
             else
               Expanded(
-                child: ListView.builder(
+                child: users.isEmpty
+                    ? const Center(child: Text('No users found.'))
+                    : ListView.builder(
                   itemCount: users.length,
                   itemBuilder: (context, index) {
                     final user = users[index];
                     return ListTile(
                       leading: user['picture'] != null
                           ? CircleAvatar(
-                        backgroundImage: NetworkImage(user['picture']),
+                        backgroundImage:
+                        NetworkImage(user['picture']),
                       )
                           : const CircleAvatar(child: Icon(Icons.person)),
                       title: Text(user['name'] ?? 'No Name'),
                       subtitle: Text(user['email'] ?? ''),
                       onTap: () {
-                        // You can add sending friend request here
+                        // Optionally trigger friend request
                       },
                     );
                   },
