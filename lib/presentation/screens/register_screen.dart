@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:quiz/state/auth_cubit.dart';
 import 'package:quiz/state/auth_state.dart';
 
+
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
