@@ -1,0 +1,46 @@
+plugins {
+    id "com.android.application"
+    // START: FlutterFire Configuration
+    id 'com.google.gms.google-services'
+    // END: FlutterFire Configuration
+    id "kotlin-android"
+    id "dev.flutter.flutter-gradle-plugin"
+}
+
+android {
+    namespace = "com.example.quiz"
+    compileSdk = 34  // ✅ Modern DSL (do NOT use compileSdkVersion)
+    buildToolsVersion = "34.0.0"
+    ndkVersion = flutter.ndkVersion
+
+    defaultConfig {
+        applicationId = "com.example.quiz"
+        minSdk = 21
+        targetSdk = 34  // ✅ Modern DSL (do NOT use targetSdkVersion)
+        versionCode = 1
+        versionName = "1.0"
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            shrinkResources false
+
+
+            signingConfig = signingConfigs.debug // TODO: replace for actual release keystore
+        }
+    }
+}
+
+flutter {
+    source = "../.."
+}
