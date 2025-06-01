@@ -5,6 +5,7 @@ import '../presentation/screens/home_screen.dart';
 import '../presentation/screens/splash_screen.dart';
 import '../presentation/screens/friends_screen.dart';
 import 'package:quiz/presentation/screens/user_search_screen.dart';
+import 'package:quiz/presentation/screens/question_screen.dart';
 class AppRoutes {
   static final router = GoRouter(
     initialLocation: '/',
@@ -23,7 +24,7 @@ class AppRoutes {
       ),
       GoRoute(
         path: '/home',
-        builder: (context, state) =>  UserSearchScreen(),
+        builder: (context, state) =>  QuestionSetupScreen(),
       ),
       // Add more routes as needed
     ],

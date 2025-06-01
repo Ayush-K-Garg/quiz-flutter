@@ -74,6 +74,8 @@ dependencies:
   just_audio: ^0.9.36
   volume_controller: ^2.0.4
 
+  html_unescape: ^2.0.0
+
   # Dark/Light mode + Theme
   dynamic_color: ^1.6.9
 
