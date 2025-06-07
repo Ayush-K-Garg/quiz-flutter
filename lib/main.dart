@@ -2,14 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
+import 'package:quiz/core/cubit/match_cubit.dart';
 import 'core/themes/theme_cubit.dart';
 import 'core/themes/app_theme.dart';
 import 'firebase_options.dart';
 import 'state/auth_cubit.dart';
-import 'routes/app_routes.dart'; // This should contain your GoRouter instance
+import 'routes/app_routes.dart';
+import 'package:quiz/core/services/match_service.dart';
+import 'package:quiz/core/services/socket_service.dart';
+import 'package:quiz/core/services/quiz_api.dart';
+// This should contain your GoRouter instance
 
 Future<void> main() async {
+  final quizapi=QuizApi();
+  final socket=SocketService();
+  final match=MatchService();
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize Firebase with generated options
@@ -20,14 +27,18 @@ Future<void> main() async {
   // Initialize Supabase client with your project URL and anon key
   await Supabase.initialize(
     url: 'https://wrlosqabsqkscvkfpqhu.supabase.co',
-    anonKey: 'your-anon-key-here',
+    anonKey: '',
   );
 
-  runApp(const MyApp());
+  runApp(BlocProvider(
+    create: (_) => MatchCubit(matchService: match, socketService: socket, quizApi: quizapi),
+    child: const MyApp(),
+  ),);
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+
 
   @override
   Widget build(BuildContext context) {

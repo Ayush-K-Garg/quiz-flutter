@@ -1,11 +1,23 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:html_unescape/html_unescape.dart';
+
+import 'package:quiz/core/cubit/match_cubit.dart';
+import 'package:quiz/core/cubit/match_state.dart';
+import 'package:quiz/data/models/match_room_model.dart';
+import 'package:quiz/data/models/question_model.dart';
 import 'results_screen.dart';
 
 class QuizScreen extends StatefulWidget {
-  final List<dynamic> questions;
-  const QuizScreen({super.key, required this.questions});
+  final List<Question> questions;
+  final MatchRoom? matchRoom;
+
+  const QuizScreen({
+    super.key,
+    required this.questions,
+    this.matchRoom,
+  });
 
   @override
   State<QuizScreen> createState() => _QuizScreenState();
@@ -16,8 +28,8 @@ class _QuizScreenState extends State<QuizScreen> {
   late Timer timer;
   int timeLeft = 0;
   Map<int, String> selectedAnswers = {};
-  bool quizEnded = false;
   final unescape = HtmlUnescape();
+  bool quizEnded = false;
 
   @override
   void initState() {
@@ -27,7 +39,7 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   void startTimer() {
-    timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (timeLeft == 0) {
         endQuiz();
       } else {
@@ -37,14 +49,20 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   void endQuiz() {
+    if (quizEnded) return;
     timer.cancel();
     setState(() => quizEnded = true);
 
     int score = 0;
     for (int i = 0; i < widget.questions.length; i++) {
-      if (selectedAnswers[i] == widget.questions[i]['correct_answer']) {
+      if (selectedAnswers[i] == widget.questions[i].correctAnswer) {
         score++;
       }
+    }
+
+    if (widget.matchRoom != null) {
+      final matchCubit = context.read<MatchCubit>();
+      matchCubit.submitAnswers(widget.matchRoom!.id, selectedAnswers, score);
     }
 
     Navigator.pushReplacement(
@@ -55,9 +73,14 @@ class _QuizScreenState extends State<QuizScreen> {
           total: widget.questions.length,
           questions: widget.questions,
           selectedAnswers: selectedAnswers,
+          roomId: widget.matchRoom?.id, // ✅ Correctly passing roomId
         ),
       ),
     );
+  }
+
+  void selectAnswer(String answer) {
+    setState(() => selectedAnswers[currentIndex] = answer);
   }
 
   @override
@@ -66,17 +89,11 @@ class _QuizScreenState extends State<QuizScreen> {
     super.dispose();
   }
 
-  void selectAnswer(String answer) {
-    setState(() => selectedAnswers[currentIndex] = answer);
-  }
-
   @override
   Widget build(BuildContext context) {
     final q = widget.questions[currentIndex];
-    final question = unescape.convert(q['question']);
-    final List<String> answers = List<String>.from(q['all_answers'])
-        .map((e) => unescape.convert(e))
-        .toList();
+    final question = unescape.convert(q.question);
+    final List<String> answers = q.allAnswers.map(unescape.convert).toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -95,7 +112,10 @@ class _QuizScreenState extends State<QuizScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(question, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(
+              question,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 20),
             ...answers.map((answer) {
               final isSelected = selectedAnswers[currentIndex] == answer;
@@ -127,13 +147,38 @@ class _QuizScreenState extends State<QuizScreen> {
               ],
             ),
             const Spacer(),
+
+            // Leaderboard (for multiplayer mode)
+            if (widget.matchRoom != null) ...[
+              const Divider(),
+              const Text('🏆 Live Leaderboard:',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              BlocBuilder<MatchCubit, MatchState>(
+                builder: (context, state) {
+                  if (state is MatchLoaded) {
+                    final players = state.matchRoom.players;
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: players.map((p) {
+                        return Text('${p.username}: ${p.score}');
+                      }).toList(),
+                    );
+                  }
+                  return const SizedBox();
+                },
+              ),
+              const SizedBox(height: 12),
+            ],
+
+            // Submit button
             Center(
               child: ElevatedButton.icon(
                 onPressed: endQuiz,
                 icon: const Icon(Icons.flag),
                 label: const Text('Submit Quiz'),
               ),
-            )
+            ),
           ],
         ),
       ),

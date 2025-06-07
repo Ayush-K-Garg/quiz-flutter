@@ -6,6 +6,7 @@ import '../presentation/screens/splash_screen.dart';
 import '../presentation/screens/friends_screen.dart';
 import 'package:quiz/presentation/screens/user_search_screen.dart';
 import 'package:quiz/presentation/screens/question_screen.dart';
+import 'package:quiz/presentation/screens/mode_selection_screen.dart';
 class AppRoutes {
   static final router = GoRouter(
     initialLocation: '/',
@@ -23,8 +24,20 @@ class AppRoutes {
         builder: (context, state) => const RegisterScreen(),
       ),
       GoRoute(
+        path: '/loading',
+        builder: (context, state) =>  SplashScreen(),
+      ),
+      GoRoute(
+        path: '/mode-selection',
+        builder: (context, state) =>  ModeSelectionScreen(),
+      ),
+      GoRoute(
+        path: '/friends',
+        builder: (context, state) =>  FriendScreen(),
+      ),
+      GoRoute(
         path: '/home',
-        builder: (context, state) =>  QuestionSetupScreen(),
+        builder: (context, state) =>  ModeSelectionScreen(),
       ),
       // Add more routes as needed
     ],
