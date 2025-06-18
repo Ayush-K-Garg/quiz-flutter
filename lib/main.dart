@@ -15,9 +15,10 @@ import 'package:quiz/core/services/quiz_api.dart';
 
 Future<void> main() async {
   final quizapi=QuizApi();
-  final socket=SocketService();
+  final socketService=SocketService();
   final match=MatchService();
   WidgetsFlutterBinding.ensureInitialized();
+  socketService.connect(); // ✅ Connect socket before app runs
 
   // Initialize Firebase with generated options
   await Firebase.initializeApp(
@@ -31,7 +32,7 @@ Future<void> main() async {
   );
 
   runApp(BlocProvider(
-    create: (_) => MatchCubit(matchService: match, socketService: socket, quizApi: quizapi),
+    create: (_) => MatchCubit(matchService: match, socketService: socketService, quizApi: quizapi),
     child: const MyApp(),
   ),);
 }

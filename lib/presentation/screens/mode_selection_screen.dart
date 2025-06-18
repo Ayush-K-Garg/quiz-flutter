@@ -1,17 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:quiz/presentation/screens/category_selection_screen.dart';
-
+import 'customroom_setup_screen.dart';
 class ModeSelectionScreen extends StatelessWidget {
   const ModeSelectionScreen({super.key});
 
   void _navigateWithMode(BuildContext context, String mode) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => CategorySelectionScreen(mode: mode),
-      ),
-    );
+    if (mode == 'custom_room') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => CustomRoomSetupScreen(), // new screen to create/join custom room
+        ),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => CategorySelectionScreen(mode: mode),
+        ),
+      );
+    }
   }
+
 
   @override
   Widget build(BuildContext context) {

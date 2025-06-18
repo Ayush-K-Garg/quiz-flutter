@@ -12,7 +12,13 @@ const List<String> categories = [
 
 class QuestionSetupScreen extends StatefulWidget {
   final String mode; // 'practice', 'random', or 'custom'
-  const QuestionSetupScreen({super.key, required this.mode});
+  final String? customRoomId;
+
+  const QuestionSetupScreen({
+    super.key,
+    required this.mode,
+    this.customRoomId,
+  });
 
   @override
   State<QuestionSetupScreen> createState() => _QuestionSetupScreenState();
@@ -26,14 +32,15 @@ class _QuestionSetupScreenState extends State<QuestionSetupScreen> {
 
   final List<String> difficulties = ['easy', 'medium', 'hard'];
 
-  void startQuiz() async {
+  Future<void> startQuiz() async {
     setState(() => loading = true);
 
-    if (widget.mode == 'practice') {
-      try {
+    final token = 'YOUR_AUTH_TOKEN_HERE'; // Replace with Firebase token
+
+    try {
+      if (widget.mode == 'practice') {
         final uri = Uri.parse(
-          'https://opentdb.com/api.php?amount=$selectedAmount&category=9&difficulty=$selectedDifficulty&type=multiple',
-        );
+            'https://opentdb.com/api.php?amount=$selectedAmount&category=9&difficulty=$selectedDifficulty&type=multiple');
         final res = await http.get(uri);
         final data = jsonDecode(res.body);
 
@@ -50,19 +57,8 @@ class _QuestionSetupScreenState extends State<QuestionSetupScreen> {
         } else {
           throw Exception("No questions found.");
         }
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ Error: $e')),
-        );
-      } finally {
-        setState(() => loading = false);
-      }
-    } else {
-      // Multiplayer mode: call Node.js backend
-      final uri = Uri.parse('http://10.0.2.2:3000/api/match/create');
-      final token = 'HARDCODED_OR_LATER_TOKEN'; // TODO: Replace with Firebase token
-
-      try {
+      } else if (widget.mode == 'random') {
+        final uri = Uri.parse('http://10.0.2.2:3000/api/match/create');
         final res = await http.post(
           uri,
           headers: {
@@ -85,15 +81,16 @@ class _QuestionSetupScreenState extends State<QuestionSetupScreen> {
             amount: selectedAmount,
             status: 'waiting',
             players: [],
-            questions: [], // will be fetched later
-            createdAt: DateTime.now(), // ✅ this is a DateTime
+            questions: [],
+            createdAt: DateTime.now(),
+            capacity: data['capacity'] ?? 2,
           );
 
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (_) => QuizScreen(
-                questions: [], // Will fetch from backend
+                questions: [],
                 matchRoom: matchRoom,
               ),
             ),
@@ -101,13 +98,57 @@ class _QuestionSetupScreenState extends State<QuestionSetupScreen> {
         } else {
           throw Exception(data['message'] ?? 'Match room creation failed.');
         }
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ Error: $e')),
+      } else if (widget.mode == 'custom' && widget.customRoomId != null) {
+        final uri = Uri.parse('http://10.0.2.2:3000/api/match/setupCustomRoom');
+        final res = await http.post(
+          uri,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          body: jsonEncode({
+            'roomId': widget.customRoomId,
+            'category': selectedCategory,
+            'difficulty': selectedDifficulty,
+            'questionCount': selectedAmount,
+          }),
         );
-      } finally {
-        setState(() => loading = false);
+
+        final data = jsonDecode(res.body);
+        if (res.statusCode == 200 && data['success'] == true) {
+          final matchRoom = MatchRoom(
+            id: widget.customRoomId!,
+            category: selectedCategory!,
+            difficulty: selectedDifficulty!,
+            amount: selectedAmount,
+            status: 'waiting',
+            players: [],
+            questions: [],
+            createdAt: DateTime.now(),
+            capacity: data['capacity'] ?? 2,
+          );
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => QuizScreen(
+                questions: [],
+                matchRoom: matchRoom,
+              ),
+            ),
+          );
+        } else {
+          throw Exception(data['message'] ?? 'Custom room setup failed.');
+        }
+      } else {
+        throw Exception('Invalid mode or missing roomId.');
       }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('❌ Error: $e')),
+      );
+    } finally {
+      setState(() => loading = false);
     }
   }
 

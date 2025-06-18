@@ -3,7 +3,7 @@ import 'package:html_unescape/html_unescape.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-import '../../data/models/question_model.dart'; // Make sure this path is correct
+import 'package:quiz/data/models/question_model.dart'; // Make sure this path is correct
 
 class ResultScreen extends StatefulWidget {
   final int score;

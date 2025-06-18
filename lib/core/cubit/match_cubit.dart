@@ -15,38 +15,18 @@ class MatchCubit extends Cubit<MatchState> {
     required this.matchService,
     required this.socketService,
     required this.quizApi,
-  }) : super(MatchInitial()) {
-    _setupSocketListeners();
-  }
+  }) : super(MatchInitial());
 
-  void _setupSocketListeners() {
-    print('[MatchCubit] Connecting socket...');
-    socketService.connect();
-
-    socketService.on('connect', (_) {
-      print('[Socket] Connected to server.');
-    });
-
-    socketService.on('disconnect', (_) {
-      print('[Socket] Disconnected from server.');
-    });
-
-    socketService.on('matchRoomUpdated', (data) {
-      print('[Socket] matchRoomUpdated event received: $data');
-      try {
-        final updatedRoom = MatchRoom.fromJson(data);
-        print('[MatchCubit] Parsed updated room: ${updatedRoom.id}');
-        emit(MatchLoaded(updatedRoom));
-      } catch (e) {
-        print('[MatchCubit] Failed to parse matchRoomUpdated: $e');
-        emit(MatchError('Failed to parse match room update: $e'));
-      }
-    });
-
-    socketService.on('error', (data) {
-      print('[Socket] Error event received: $data');
-      emit(MatchError(data.toString()));
-    });
+  /// Called before joining or creating a room to setup socket events
+  void _connectToSocket({
+    required void Function() onConnected,
+    required Map<String, Function(dynamic)> listeners,
+  }) {
+    print('🟢 [MatchCubit] Connecting socket with listeners...');
+    socketService.connect(
+      onConnected: onConnected,
+      listeners: listeners,
+    );
   }
 
   Future<void> createRoom({
@@ -54,47 +34,48 @@ class MatchCubit extends Cubit<MatchState> {
     required String difficulty,
     required int amount,
     required String mode,
+    String? hostUid, // for custom mode
   }) async {
-    print('[MatchCubit] Mode: $mode | Category: $category | Difficulty: $difficulty | Amount: $amount');
+    print('\n🛠 [MatchCubit] Creating room...');
+    print('🎯 Mode: $mode | 📂 Category: $category | 🎚 Difficulty: $difficulty | 🔢 Amount: $amount');
 
     if (mode == 'practice') {
-      print('[MatchCubit] Practice mode detected. Fetching practice questions from QuizApi.');
-
+      print('🧪 [MatchCubit] Practice mode detected. Fetching from QuizApi...');
       try {
         final questionsRaw = await quizApi.fetchQuestions(
           category: category,
           difficulty: difficulty,
           amount: amount,
         );
-
-        // Parse questions to your Question model
         final questions = questionsRaw.map<Question>((q) => Question.fromJson(q)).toList();
 
-        print('[MatchCubit] Fetched ${questions.length} practice questions.');
+        print('✅ [MatchCubit] Received ${questions.length} questions.');
 
         final practiceRoom = MatchRoom(
           id: 'practice-${DateTime.now().millisecondsSinceEpoch}',
+          customRoomId: null,
           category: category,
           difficulty: difficulty,
           amount: amount,
           status: 'started',
+          capacity: 1,
+          hostUid: null,
           players: [],
-          questions: questions,
+          questions: questions.map((q) => q.toJson()).toList(),
           createdAt: DateTime.now(),
         );
 
         emit(MatchLoaded(practiceRoom));
       } catch (e) {
-        print('[MatchCubit] Error generating practice questions: $e');
+        print('❌ [MatchCubit] Error generating practice questions: $e');
         emit(MatchError('Failed to generate practice questions: $e'));
       }
-
       return;
     }
 
     emit(MatchLoading());
 
-    try {
+    if (mode == 'random_match') {
       final room = await matchService.createMatchRoom(
         category: category,
         difficulty: difficulty,
@@ -103,30 +84,121 @@ class MatchCubit extends Cubit<MatchState> {
       );
 
       if (room != null) {
-        print('[MatchCubit] Room created successfully: ${room.id}');
+        print('✅ [MatchCubit] Room created: ID=${room.id}');
         emit(MatchLoaded(room));
-        socketService.emit('joinRoom', {'roomId': room.id});
+
+        _connectToSocket(
+          onConnected: () {
+            socketService.emit('joinRoom', {'roomId': room.id});
+            print('📤 [Socket] joinRoom emitted for room: ${room.id}');
+          },
+          listeners: {
+            'matchRoomUpdated': (data) {
+              print('📥 matchRoomUpdated: $data');
+              try {
+                final updatedRoom = MatchRoom.fromJson(data);
+                emit(MatchLoaded(updatedRoom));
+              } catch (e) {
+                print('❌ [MatchCubit] Failed to parse matchRoomUpdated: $e');
+                emit(MatchError('Failed to parse matchRoomUpdated: $e'));
+              }
+            },
+            'error': (data) {
+              print('🚨 [Socket] Error: $data');
+              emit(MatchError(data.toString()));
+            },
+          },
+        );
       } else {
-        print('[MatchCubit] Room creation returned null');
+        print('⚠️ [MatchCubit] Room creation returned null');
         emit(MatchError('Room creation returned null'));
       }
-    } catch (e) {
-      print('[MatchCubit] Error while creating room: $e');
-      emit(MatchError('Failed to create room: $e'));
+    }
+
+    if (mode == 'custom_room') {
+      print('🏗 [MatchCubit] Creating custom room...');
+      _connectToSocket(
+        onConnected: () {
+          socketService.emit('createCustomRoom', {
+            'host': hostUid,
+            'category': category,
+            'difficulty': difficulty,
+          });
+          print('📤 [Socket] createCustomRoom emitted');
+        },
+        listeners: {
+          'customRoomCreated': (data) {
+            print('📥 customRoomCreated: $data');
+            try {
+              final customRoom = MatchRoom.fromJson(data);
+              emit(MatchLoaded(customRoom));
+            } catch (e) {
+              print('❌ [MatchCubit] Failed to parse customRoomCreated: $e');
+              emit(MatchError('Invalid customRoomCreated data: $e'));
+            }
+          },
+          'userJoined': (data) {
+            print('👥 userJoined: $data');
+            try {
+              final updatedRoom = MatchRoom.fromJson(data);
+              emit(MatchLoaded(updatedRoom));
+            } catch (e) {
+              print('❌ [MatchCubit] Failed to parse userJoined: $e');
+              emit(MatchError('Invalid userJoined data: $e'));
+            }
+          },
+          'matchRoomUpdated': (data) {
+            print('📥 matchRoomUpdated: $data');
+            try {
+              final updatedRoom = MatchRoom.fromJson(data);
+              emit(MatchLoaded(updatedRoom));
+            } catch (e) {
+              print('❌ [MatchCubit] Failed to parse matchRoomUpdated: $e');
+              emit(MatchError('Failed to parse matchRoomUpdated: $e'));
+            }
+          },
+          'error': (data) {
+            print('🚨 [Socket] Error: $data');
+            emit(MatchError(data.toString()));
+          },
+        },
+      );
     }
   }
 
   Future<void> joinRoom(String roomId) async {
-    print('[MatchCubit] Attempting to join room: $roomId');
+    print('\n👥 [MatchCubit] Joining room: $roomId');
     emit(MatchLoading());
 
     try {
       final room = await matchService.joinMatchRoom(roomId);
-      print('[MatchCubit] Joined room successfully: ${room.id}');
+      print('✅ [MatchCubit] Joined room successfully: ID=${room.id}');
       emit(MatchLoaded(room));
-      socketService.emit('joinRoom', {'roomId': roomId});
+
+      _connectToSocket(
+        onConnected: () {
+          socketService.emit('joinRoom', {'roomId': roomId});
+          print('📤 [Socket] joinRoom emitted for room: $roomId');
+        },
+        listeners: {
+          'matchRoomUpdated': (data) {
+            print('📥 matchRoomUpdated: $data');
+            try {
+              final updatedRoom = MatchRoom.fromJson(data);
+              emit(MatchLoaded(updatedRoom));
+            } catch (e) {
+              print('❌ [MatchCubit] Failed to parse matchRoomUpdated: $e');
+              emit(MatchError('Failed to parse matchRoomUpdated: $e'));
+            }
+          },
+          'error': (data) {
+            print('🚨 [Socket] Error: $data');
+            emit(MatchError(data.toString()));
+          },
+        },
+      );
     } catch (e) {
-      print('[MatchCubit] Failed to join room: $e');
+      print('❌ [MatchCubit] Failed to join room: $e');
       emit(MatchError('Failed to join room: $e'));
     }
   }
@@ -136,26 +208,30 @@ class MatchCubit extends Cubit<MatchState> {
       Map<int, String> answers,
       int score,
       ) async {
+    print('\n📨 [MatchCubit] Submitting answers...');
+    print('🆔 Room ID: $roomId | 🧠 Score: $score');
+    print('📝 Answers: $answers');
+
     try {
-      print('[MatchCubit] Submitting answers for room: $roomId with score: $score');
       final stringifiedAnswers = answers.map((key, value) => MapEntry(key.toString(), value));
 
-      await matchService.submitAnswers(
+      await matchService.submitAnswer(
         roomId: roomId,
-        answers: stringifiedAnswers,
+        answer: stringifiedAnswers,
         score: score,
       );
 
-      print('[MatchCubit] Answers submitted successfully.');
+      print('✅ [MatchCubit] Answers submitted successfully.');
+      emit(MatchSubmitted());
     } catch (e) {
-      print('[MatchCubit] Failed to submit answers: $e');
+      print('❌ [MatchCubit] Failed to submit answers: $e');
       emit(MatchError('Failed to submit answers: $e'));
     }
   }
 
   @override
   Future<void> close() {
-    print('[MatchCubit] Closing and disconnecting socket.');
+    print('❎ [MatchCubit] Closing cubit and disconnecting socket.');
     socketService.disconnect();
     return super.close();
   }
