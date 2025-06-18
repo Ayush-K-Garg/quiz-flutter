@@ -39,7 +39,7 @@ class _ResultScreenState extends State<ResultScreen> {
   }
 
   Future<void> fetchLeaderboard() async {
-    final url = 'http://10.0.2.2:3000/api/leaderboard/${widget.roomId}';
+    final url = 'http://10.0.2.2:3000/api/match/leaderboard/${widget.roomId}';
     print('\n📡 [ResultScreen] Fetching leaderboard from: $url');
 
     try {
