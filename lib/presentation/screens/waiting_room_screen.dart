@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 import 'package:quiz/data/models/match_room_model.dart';
@@ -17,7 +18,7 @@ class WaitingRoomScreen extends StatefulWidget {
     Key? key,
     required this.roomId,
     required this.isHost,
-    this.capacity=2,
+    this.capacity = 2,
   }) : super(key: key);
 
   @override
@@ -66,12 +67,12 @@ class _WaitingRoomScreenState extends State<WaitingRoomScreen> {
         final data = jsonDecode(res.body);
         final arr = data['leaderboard'] as List<dynamic>? ?? [];
         setState(() => _joinedCount = arr.length);
-        debugPrint('👥 Updated joined count: $_joinedCount');
+        print('👥 Updated joined count: $_joinedCount');
       } else {
-        debugPrint('❌ Failed to fetch leaderboard: ${res.statusCode}');
+        print('❌ Failed to fetch leaderboard: ${res.statusCode}');
       }
     } catch (e) {
-      debugPrint('⚠️ Error during leaderboard fetch: $e');
+      print('⚠️ Error during leaderboard fetch: $e');
     }
   }
 
@@ -102,9 +103,9 @@ class _WaitingRoomScreenState extends State<WaitingRoomScreen> {
         }),
       );
 
-      debugPrint('📤 Match start requested: ${response.statusCode}');
+      print('📤 Match start requested: ${response.statusCode}');
     } catch (e) {
-      debugPrint('❌ Start match failed: $e');
+      print('❌ Start match failed: $e');
     }
 
     setState(() => _isStarting = false);
@@ -114,7 +115,7 @@ class _WaitingRoomScreenState extends State<WaitingRoomScreen> {
     _socketService.connect(onConnected: () {
       _socketService.joinRoom(widget.roomId);
       _socketService.listenForMatchStarted((questions, matchRoom) {
-        debugPrint("⚡ Socket matchStarted received: ${questions.length} questions");
+        print("⚡ Socket matchStarted received: ${questions.length} questions");
 
         _statusPollingTimer?.cancel();
         _leaderboardTimer?.cancel();
@@ -139,44 +140,87 @@ class _WaitingRoomScreenState extends State<WaitingRoomScreen> {
       if (_matchStarted) return;
 
       final token = await _getToken();
-      if (token == null) return;
+      if (token == null) {
+        print('⚠️ No auth token found for polling.');
+        return;
+      }
 
       try {
-        final res = await http.get(
+        final statusRes = await http.get(
           Uri.parse('$_baseUrl/status/${widget.roomId}'),
           headers: {'Authorization': 'Bearer $token'},
         );
 
-        if (res.statusCode == 200) {
-          final json = jsonDecode(res.body);
-          if (json['status'] == 'started') {
-            debugPrint('⏳ Polling: Match started! Fetching questions...');
+        if (statusRes.statusCode == 200) {
+          final json = jsonDecode(statusRes.body);
+          final status = json['status'];
+          print('🟡 Polling: Status = $status');
+
+          if (status == 'started') {
+            print('⏳ Polling: Match started! Fetching full room data...');
             _matchStarted = true;
             _statusPollingTimer?.cancel();
             _leaderboardTimer?.cancel();
 
-            final qRes = await http.get(
-              Uri.parse('$_baseUrl/match/${widget.roomId}/questions'),
+            final roomRes = await http.get(
+              Uri.parse('$_baseUrl/debug-room/${widget.roomId}'),
               headers: {'Authorization': 'Bearer $token'},
             );
 
-            if (qRes.statusCode == 200) {
-              final List<Question> questions = (jsonDecode(qRes.body) as List)
-                  .map((e) => Question.fromJson(e))
-                  .toList();
+            if (roomRes.statusCode == 200) {
+              final Map<String, dynamic> roomJson = jsonDecode(roomRes.body);
+              print('📦 Room JSON fetched: ${roomJson.toString()}');
 
-              final matchRoom = MatchRoom(
-                id: widget.roomId,
-                category: selectedCategory,
-                difficulty: selectedDifficulty,
-                amount: selectedAmount,
-                status: 'started',
-                players: [],
-                questions: questions.map((q) => q.toJson()).toList(), // ✅ Fixed here
-                createdAt: DateTime.now(),
-                capacity: widget.capacity,
-              );
+              // Try parsing MatchRoom
+              late MatchRoom matchRoom;
+              try {
+                matchRoom = MatchRoom.fromJson(roomJson);
+                print('✅ MatchRoom parsed successfully.');
+              } catch (e) {
+                print('❌ Failed to parse MatchRoom: $e');
+                return;
+              }
 
+              // Parse raw questions
+              final rawQuestions = roomJson['questions'] as List? ?? [];
+              print('📋 Total raw questions: ${rawQuestions.length}');
+
+              // Log every question
+              for (int i = 0; i < rawQuestions.length; i++) {
+                final q = rawQuestions[i];
+                print('🔍 Q[$i] Raw: $q');
+              }
+
+              // Safely parse each question
+              final List<Question> questions = [];
+              for (int i = 0; i < rawQuestions.length; i++) {
+                final q = rawQuestions[i];
+                try {
+                  final hasAllFields = q is Map &&
+                      q['question'] != null &&
+                      q['correct_answer'] != null &&
+                      q['all_answers'] != null &&
+                      q['question'] is String &&
+                      q['correct_answer'] is String &&
+                      q['all_answers'] is List;
+
+                  if (!hasAllFields) {
+                    print('⚠️ Q[$i] Skipped - Missing or invalid fields.');
+                    continue;
+                  }
+
+                  final question = Question.fromJson(Map<String, dynamic>.from(q));
+                  questions.add(question);
+                  print('✅ Q[$i] Parsed successfully: ${question.question}');
+                } catch (e) {
+                  print('❌ Q[$i] Failed to parse: $e');
+                }
+              }
+
+              print('✅ Total questions parsed: ${questions.length}');
+              print('👥 Players in room: ${matchRoom.players.length}');
+
+              // Navigate to QuizScreen if safe
               if (mounted) {
                 Navigator.pushReplacement(
                   context,
@@ -188,17 +232,19 @@ class _WaitingRoomScreenState extends State<WaitingRoomScreen> {
                   ),
                 );
               }
+            } else {
+              print('❌ Failed to fetch room data: ${roomRes.statusCode}');
             }
-
           }
         } else {
-          debugPrint('❌ Polling failed: ${res.statusCode}');
+          print('❌ Polling failed: ${statusRes.statusCode}');
         }
       } catch (e) {
-        debugPrint('⚠️ Polling error: $e');
+        print('⚠️ Polling exception: $e');
       }
     });
   }
+
 
   @override
   void initState() {
@@ -219,7 +265,7 @@ class _WaitingRoomScreenState extends State<WaitingRoomScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final capacity = widget.capacity ?? 2;
+    final capacity = widget.capacity;
     final canStart = widget.isHost && _joinedCount >= 2;
 
     return Scaffold(
@@ -229,8 +275,38 @@ class _WaitingRoomScreenState extends State<WaitingRoomScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Room ID: ${widget.roomId}', style: const TextStyle(fontSize: 18)),
-            const SizedBox(height: 12),
+            /// ✅ ROOM ID COPY
+            GestureDetector(
+              onTap: () {
+                Clipboard.setData(ClipboardData(text: widget.roomId));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Copied Room Code: ${widget.roomId}'),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.copy, size: 18),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Room Code: ${widget.roomId}',
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
             Text('Players Joined: $_joinedCount / $capacity', style: const TextStyle(fontSize: 18)),
             const SizedBox(height: 24),
 

@@ -11,9 +11,11 @@ class Question {
 
   factory Question.fromJson(Map<String, dynamic> json) {
     return Question(
-      question: json['question'],
-      correctAnswer: json['correct_answer'],
-      allAnswers: List<String>.from(json['all_answers']),
+      question: json['question']?.toString() ?? '',
+      correctAnswer: json['correct_answer']?.toString() ?? '',
+      allAnswers: (json['all_answers'] as List<dynamic>? ?? [])
+          .map((e) => e?.toString() ?? '')
+          .toList(),
     );
   }
 

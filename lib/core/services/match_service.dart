@@ -177,7 +177,7 @@ class MatchService {
     required Map<String, String> answer,
     required int score,
   }) async {
-    final uri = Uri.parse('$baseUrl/api/match/answer');
+    final uri = Uri.parse('$baseUrl/api/match/answer-bulk');
     final payload = {
       'roomId': roomId,
       'answers': answer,
@@ -186,11 +186,19 @@ class MatchService {
 
     print('\n🔹 [MatchService] 🔹 SUBMIT FINAL ANSWERS');
     print('➡️ POST $uri');
-    print('📦 Payload: $payload');
+    print('📦 Payload: ${jsonEncode(payload)}');
 
     try {
-      final headers = await _getHeaders();
-      final response = await http.post(uri, headers: headers, body: jsonEncode(payload));
+      final headers = await _getHeaders(); // Ensure this adds Auth + Content-Type
+      headers['Content-Type'] = 'application/json';
+
+      print('🧾 Headers: $headers');
+
+      final response = await http.post(
+        uri,
+        headers: headers,
+        body: jsonEncode(payload),
+      );
 
       print('✅ Response Code: ${response.statusCode}');
       print('📝 Response Body: ${response.body}');
@@ -198,11 +206,13 @@ class MatchService {
       if (response.statusCode != 200) {
         throw Exception('❌ Failed to submit answers: ${response.statusCode} - ${response.body}');
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('🚨 [MatchService] Exception in submitAnswer: $e');
+      print('📌 Stack Trace: $stackTrace');
       rethrow;
     }
   }
+
 
   /// 🔹 GET MATCH ROOM
   Future<MatchRoom> getMatchRoom(String roomId) async {
@@ -257,31 +267,49 @@ class MatchService {
 
   /// 🔹 GET LEADERBOARD
   Future<List<Map<String, dynamic>>> getLeaderboard(String roomId) async {
-    final uri = Uri.parse('$baseUrl/api/match/leaderboard/$roomId');
+    final uri = Uri.parse('$baseUrl/api/leaderboard/$roomId');
 
-    print('\n🔹 [MatchService] 🔹 GET LEADERBOARD');
+    print('\n📊 [MatchService] 🔹 GET LEADERBOARD');
     print('➡️ GET $uri');
 
     try {
       final headers = await _getHeaders();
+      print('🧾 Headers: $headers');
+
       final response = await http.get(uri, headers: headers);
 
-      print('✅ Response Code: ${response.statusCode}');
-      print('📝 Response Body: ${response.body}');
+      print('📥 Status Code: ${response.statusCode}');
+      print('📥 Body: ${response.body}');
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return (data['leaderboard'] as List)
-            .map((e) => e as Map<String, dynamic>)
+        final Map<String, dynamic> data = jsonDecode(response.body);
+
+        if (!data.containsKey('leaderboard')) {
+          print('⚠️ No leaderboard field in response.');
+          throw Exception('Invalid response format: leaderboard field missing');
+        }
+
+        final leaderboard = (data['leaderboard'] as List)
+            .map((entry) => entry as Map<String, dynamic>)
             .toList();
+
+        print('✅ Parsed Leaderboard:');
+        for (var i = 0; i < leaderboard.length; i++) {
+          print('  ${i + 1}. ${leaderboard[i]['name']} - ${leaderboard[i]['score']}');
+        }
+
+        return leaderboard;
       } else {
-        throw Exception('❌ Failed to fetch leaderboard: ${response.statusCode} - ${response.body}');
+        throw Exception(
+            '❌ Failed to fetch leaderboard: ${response.statusCode} - ${response.body}');
       }
-    } catch (e) {
-      print('🚨 Exception during getLeaderboard: $e');
+    } catch (e, stackTrace) {
+      print('🚨 [MatchService] Exception in getLeaderboard: $e');
+      print('🧵 StackTrace:\n$stackTrace');
       rethrow;
     }
   }
+
 
   /// 🔹 PRACTICE MODE - Fetch Questions from API
   Future<List<Question>> generatePracticeQuestions({

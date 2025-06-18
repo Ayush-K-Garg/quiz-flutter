@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:html_unescape/html_unescape.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-import 'package:quiz/data/models/question_model.dart'; // Make sure this path is correct
+import 'package:quiz/data/models/question_model.dart';
 
 class ResultScreen extends StatefulWidget {
   final int score;
@@ -37,26 +39,49 @@ class _ResultScreenState extends State<ResultScreen> {
   }
 
   Future<void> fetchLeaderboard() async {
+    final url = 'http://10.0.2.2:3000/api/leaderboard/${widget.roomId}';
+    print('\n📡 [ResultScreen] Fetching leaderboard from: $url');
+
     try {
+      final token = await FirebaseAuth.instance.currentUser?.getIdToken();
+      if (token == null) {
+        print('❌ No auth token available');
+        throw Exception('No token provided');
+      }
+      print('🔑 Using token: $token');
+
       final res = await http.get(
-        Uri.parse('http://10.0.2.2:3000/api/leaderboard/${widget.roomId}'),
+        Uri.parse(url),
+        headers: {'Authorization': 'Bearer $token'},
       );
+
+      print('📥 Status Code: ${res.statusCode}');
+      print('📥 Response Body: ${res.body}');
 
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
-        setState(() {
-          leaderboard = List<Map<String, dynamic>>.from(data);
-          leaderboard.sort((a, b) => b['score'].compareTo(a['score']));
-          loading = false;
-        });
+        if (data is Map<String, dynamic> && data.containsKey('leaderboard')) {
+          final lb = List<Map<String, dynamic>>.from(data['leaderboard']);
+          lb.sort((a, b) => b['score'].compareTo(a['score']));
+          print('✅ Parsed Leaderboard: $lb');
+          setState(() {
+            leaderboard = lb;
+            loading = false;
+          });
+        } else {
+          print('⚠️ Invalid leaderboard structure');
+          setState(() => loading = false);
+        }
       } else {
-        throw Exception('Failed to fetch leaderboard');
+        throw Exception('❌ Failed to fetch leaderboard. Code: ${res.statusCode}');
       }
-    } catch (e) {
-      debugPrint('Leaderboard error: $e');
+    } catch (e, stackTrace) {
+      print('🚨 Leaderboard fetch error: $e');
+      print('🧵 Stack trace: $stackTrace');
       setState(() => loading = false);
     }
   }
+
 
   Widget buildLeaderboard() {
     if (loading) {
@@ -67,26 +92,32 @@ class _ResultScreenState extends State<ResultScreen> {
       return const Text('No leaderboard data available.');
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: leaderboard.asMap().entries.map((entry) {
-        final i = entry.key + 1;
-        final player = entry.value;
-        final username = player['username'] ?? 'Unknown';
-        final photoUrl = player['photoUrl'] ?? '';
-        final score = player['score'] ?? 0;
+    return RefreshIndicator(
+      onRefresh: fetchLeaderboard,
+      child: ListView(
+        shrinkWrap: true,
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: leaderboard.asMap().entries.map((entry) {
+          final i = entry.key + 1;
+          final player = entry.value;
+          final username = player['name'] ?? 'Unknown';
+          final photoUrl = player['picture'] ?? '';
+          final score = player['score'] ?? 0;
 
-        return ListTile(
-          leading: CircleAvatar(
-            backgroundImage: photoUrl.isNotEmpty
-                ? NetworkImage(photoUrl)
-                : const AssetImage('assets/default_avatar.png') as ImageProvider,
-          ),
-          title: Text('$i. $username'),
-          trailing: Text('$score pts'),
-        );
-      }).toList(),
+          return ListTile(
+            leading: CircleAvatar(
+              backgroundImage: photoUrl.isNotEmpty
+                  ? NetworkImage(photoUrl)
+                  : const AssetImage('assets/default_avatar.png') as ImageProvider,
+            ),
+            title: Text('$i. $username'),
+
+            trailing: Text('$score pts'),
+          );
+        }).toList(),
+      ),
     );
+
   }
 
   Widget buildQuestionReview() {
