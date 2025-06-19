@@ -19,7 +19,7 @@ class _CustomRoomSetupScreenState extends State<CustomRoomSetupScreen> {
   bool _isLoading = false;
 
   // TODO: Adjust your backend URL and imported route paths
-  static const _baseUrl = 'http://10.0.2.2:3000/api/match';
+  static const _baseUrl = 'https://quiz-backend-lnrb.onrender.com/api/match';
 
   Future<String?> _getToken() async {
     final user = FirebaseAuth.instance.currentUser;

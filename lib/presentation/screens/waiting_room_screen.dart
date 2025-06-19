@@ -32,7 +32,7 @@ class _WaitingRoomScreenState extends State<WaitingRoomScreen> {
   bool _isStarting = false;
   bool _matchStarted = false;
 
-  static const _baseUrl = 'http://10.0.2.2:3000/api/match';
+  static const _baseUrl = 'https://quiz-backend-lnrb.onrender.com/api/match';
 
   final List<String> categories = [
     'General Knowledge', 'Science', 'Mathematics', 'History', 'Geography',

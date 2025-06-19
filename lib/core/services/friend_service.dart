@@ -12,7 +12,7 @@ Future<void> sendFriendRequest(String recipientId) async {
   final idToken = await getFirebaseIdToken();
 
   final response = await http.post(
-    Uri.parse('http://10.0.2.2:3000/api/friends/request'),
+    Uri.parse('https://quiz-backend-lnrb.onrender.com/api/friends/request'),
    headers: {
       'Authorization': 'Bearer $idToken',
       'Content-Type': 'application/json',

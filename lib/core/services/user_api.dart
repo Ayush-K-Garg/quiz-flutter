@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
 
 class UserApi {
-  static const String host = '10.0.2.2:3000';
+  static const String host = 'quiz-backend-lnrb.onrender.com';
   static const String basePath = '/api/users';
 
   // Helper to get the Firebase ID Token
@@ -24,7 +24,7 @@ class UserApi {
 
     print('🔍 Searching users with query: "$query"');
 
-    final uri = Uri.http(host, '$basePath/search', {'query': query});
+    final uri = Uri.https(host, '$basePath/search', {'query': query});
     print('🌐 Sending GET request to: $uri');
 
     final response = await http.get(uri, headers: {
@@ -49,7 +49,7 @@ class UserApi {
     final token = await getIdToken();
     if (token == null) throw Exception('User not logged in');
 
-    final uri = Uri.http(host, '$basePath/suggested');
+    final uri = Uri.https(host, '$basePath/suggested');
     print('🌐 Fetching suggested users from: $uri');
 
     final response = await http.get(uri, headers: {

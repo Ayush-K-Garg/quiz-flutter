@@ -58,7 +58,7 @@ class _QuestionSetupScreenState extends State<QuestionSetupScreen> {
           throw Exception("No questions found.");
         }
       } else if (widget.mode == 'random') {
-        final uri = Uri.parse('http://10.0.2.2:3000/api/match/create');
+        final uri = Uri.parse('https://quiz-backend-lnrb.onrender.com/api/match/create');
         final res = await http.post(
           uri,
           headers: {
@@ -99,7 +99,7 @@ class _QuestionSetupScreenState extends State<QuestionSetupScreen> {
           throw Exception(data['message'] ?? 'Match room creation failed.');
         }
       } else if (widget.mode == 'custom' && widget.customRoomId != null) {
-        final uri = Uri.parse('http://10.0.2.2:3000/api/match/setupCustomRoom');
+        final uri = Uri.parse('https://quiz-backend-lnrb.onrender.com/api/match/setupCustomRoom');
         final res = await http.post(
           uri,
           headers: {

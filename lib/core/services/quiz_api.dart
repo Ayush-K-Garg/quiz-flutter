@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class QuizApi {
-  static const String host = 'http://10.0.2.2:3000'; // Use your backend URL here
+  static const String host = 'https://quiz-backend-lnrb.onrender.com'; // Use your backend URL here
 
   // Fetch questions for practice mode
   Future<List<dynamic>> fetchQuestions({

@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import '../models/match_room_model.dart';
 
 class MatchService {
-  static const String _baseUrl = 'http://10.0.2.2:3000/api/match';
+  static const String _baseUrl = 'https://quiz-backend-lnrb.onrender.com/api/match';
 
   Future<MatchRoom> createMatchRoom(
       String category,

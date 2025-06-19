@@ -8,7 +8,7 @@ import 'socket_service.dart';
 class MatchService {
   final socketService = SocketService(); // Singleton or inject
 
-  static const String baseUrl = 'http://10.0.2.2:3000';
+  static const String baseUrl = 'https://quiz-backend-lnrb.onrender.com';
 
   Future<String?> _getFirebaseToken() async {
     final user = FirebaseAuth.instance.currentUser;

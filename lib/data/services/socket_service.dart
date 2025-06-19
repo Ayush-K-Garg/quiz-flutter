@@ -9,7 +9,7 @@ class SocketService {
 
   void connect(String userId) {
     socket = IO.io(
-      'http://10.0.2.2:3000',
+      'https://quiz-backend-lnrb.onrender.com',
       IO.OptionBuilder()
           .setTransports(['websocket'])
           .disableAutoConnect()
