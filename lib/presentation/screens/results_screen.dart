@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:html_unescape/html_unescape.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
 import 'package:quiz/data/models/question_model.dart';
 
 class ResultScreen extends StatefulWidget {
@@ -82,42 +80,68 @@ class _ResultScreenState extends State<ResultScreen> {
     }
   }
 
-
   Widget buildLeaderboard() {
     if (loading) {
       return const Center(child: CircularProgressIndicator());
     }
 
     if (leaderboard.isEmpty) {
-      return const Text('No leaderboard data available.');
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('No leaderboard data available.'),
+          const SizedBox(height: 8),
+          ElevatedButton.icon(
+            onPressed: fetchLeaderboard,
+            icon: const Icon(Icons.refresh),
+            label: const Text('Try Refreshing'),
+          ),
+        ],
+      );
     }
 
-    return RefreshIndicator(
-      onRefresh: fetchLeaderboard,
-      child: ListView(
-        shrinkWrap: true,
-        physics: const AlwaysScrollableScrollPhysics(),
-        children: leaderboard.asMap().entries.map((entry) {
-          final i = entry.key + 1;
-          final player = entry.value;
-          final username = player['name'] ?? 'Unknown';
-          final photoUrl = player['picture'] ?? '';
-          final score = player['score'] ?? 0;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(bottom: 8.0),
+          child: Text(
+            '🔄 Pull down or tap refresh to update the leaderboard:',
+            style: TextStyle(fontSize: 14, color: Colors.grey),
+          ),
+        ),
+        ElevatedButton.icon(
+          onPressed: fetchLeaderboard,
+          icon: const Icon(Icons.refresh),
+          label: const Text('Refresh Leaderboard'),
+        ),
+        const SizedBox(height: 10),
+        RefreshIndicator(
+          onRefresh: fetchLeaderboard,
+          child: ListView(
+            shrinkWrap: true,
+            physics: const AlwaysScrollableScrollPhysics(),
+            children: leaderboard.asMap().entries.map((entry) {
+              final i = entry.key + 1;
+              final player = entry.value;
+              final username = player['name'] ?? 'Unknown';
+              final photoUrl = player['picture'] ?? '';
+              final score = player['score'] ?? 0;
 
-          return ListTile(
-            leading: CircleAvatar(
-              backgroundImage: photoUrl.isNotEmpty
-                  ? NetworkImage(photoUrl)
-                  : const AssetImage('assets/default_avatar.png') as ImageProvider,
-            ),
-            title: Text('$i. $username'),
-
-            trailing: Text('$score pts'),
-          );
-        }).toList(),
-      ),
+              return ListTile(
+                leading: CircleAvatar(
+                  backgroundImage: photoUrl.isNotEmpty
+                      ? NetworkImage(photoUrl)
+                      : const AssetImage('assets/default_avatar.png') as ImageProvider,
+                ),
+                title: Text('$i. $username'),
+                trailing: Text('$score pts'),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
     );
-
   }
 
   Widget buildQuestionReview() {
