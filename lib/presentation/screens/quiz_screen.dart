@@ -8,6 +8,8 @@ import 'package:quiz/core/cubit/match_state.dart';
 import 'package:quiz/data/models/match_room_model.dart';
 import 'package:quiz/data/models/question_model.dart';
 import 'results_screen.dart';
+import 'package:quiz/presentation/widgets/app_drawer.dart';
+import 'package:go_router/go_router.dart';
 
 class QuizScreen extends StatefulWidget {
   final List<Question> questions;
@@ -65,23 +67,28 @@ class _QuizScreenState extends State<QuizScreen> {
       matchCubit.submitAnswers(widget.matchRoom!.id, selectedAnswers, score);
     }
 
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ResultScreen(
-          score: score,
-          total: widget.questions.length,
-          questions: widget.questions,
-          selectedAnswers: selectedAnswers,
-          roomId: widget.matchRoom?.id, // ✅ Correctly passing roomId
-        ),
-      ),
+    context.goNamed(
+      'results',
+      extra: {
+        'score': score,
+        'total': widget.questions.length,
+        'questions': widget.questions,
+        'selectedAnswers': selectedAnswers,
+        'roomId': widget.matchRoom?.id,
+      },
     );
   }
 
   void selectAnswer(String answer) {
-    setState(() => selectedAnswers[currentIndex] = answer);
+    setState(() {
+      if (selectedAnswers[currentIndex] == answer) {
+        selectedAnswers.remove(currentIndex);
+      } else {
+        selectedAnswers[currentIndex] = answer;
+      }
+    });
   }
+
 
   @override
   void dispose() {
@@ -96,7 +103,11 @@ class _QuizScreenState extends State<QuizScreen> {
     final List<String> answers = q.allAnswers.map(unescape.convert).toList();
 
     return Scaffold(
+      drawer: const CustomDrawer(),
+      backgroundColor: const Color(0xFF1E1E3F),
       appBar: AppBar(
+        backgroundColor: const Color(0xFF2C2C54),
+        foregroundColor: Colors.white,
         title: Text('Question ${currentIndex + 1}/${widget.questions.length}'),
         actions: [
           Center(
@@ -114,69 +125,94 @@ class _QuizScreenState extends State<QuizScreen> {
           children: [
             Text(
               question,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
+
+            // ✅ Styled answer options
             ...answers.map((answer) {
               final isSelected = selectedAnswers[currentIndex] == answer;
               return Container(
-                margin: const EdgeInsets.symmetric(vertical: 4),
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isSelected ? Colors.blueAccent : null,
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                child: Material(
+                  color: isSelected ? Colors.blueAccent : const Color(0xFF2C2C54),
+                  borderRadius: BorderRadius.circular(12),
+                  child: InkWell(
+                    onTap: () => selectAnswer(answer),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+                      child: Text(
+                        answer,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
                   ),
-                  onPressed: () => selectAnswer(answer),
-                  child: Text(answer),
                 ),
               );
             }),
-            const SizedBox(height: 20),
+
+            const SizedBox(height: 30),
+
+            // ✅ Styled navigation buttons
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 if (currentIndex > 0)
-                  ElevatedButton(
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.arrow_back),
                     onPressed: () => setState(() => currentIndex--),
-                    child: const Text('Previous'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF4A00E0),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    label: const Text('Previous'),
                   ),
                 if (currentIndex < widget.questions.length - 1)
-                  ElevatedButton(
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.arrow_forward),
                     onPressed: () => setState(() => currentIndex++),
-                    child: const Text('Next'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF8E2DE2),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    label: const Text('Next'),
                   ),
               ],
             ),
+
             const Spacer(),
 
-            // Leaderboard (for multiplayer mode)
-            if (widget.matchRoom != null) ...[
-              const Divider(),
-              const Text('🏆 Live Leaderboard:',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              BlocBuilder<MatchCubit, MatchState>(
-                builder: (context, state) {
-                  if (state is MatchLoaded) {
-                    final players = state.matchRoom.players;
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: players.map((p) {
-                        return Text('${p.username}: ${p.score}');
-                      }).toList(),
-                    );
-                  }
-                  return const SizedBox();
-                },
-              ),
-              const SizedBox(height: 12),
-            ],
-
-            // Submit button
+            // ✅ Submit button
             Center(
               child: ElevatedButton.icon(
                 onPressed: endQuiz,
                 icon: const Icon(Icons.flag),
                 label: const Text('Submit Quiz'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                  textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
               ),
             ),
           ],

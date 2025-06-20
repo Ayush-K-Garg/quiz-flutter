@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:quiz/core/services/user_api.dart';
+import 'package:quiz/presentation/widgets/app_drawer.dart';
+
 
 class UserSearchScreen extends StatefulWidget {
   const UserSearchScreen({Key? key}) : super(key: key);
@@ -90,6 +92,7 @@ class _UserSearchScreenState extends State<UserSearchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: const CustomDrawer(),
       appBar: AppBar(title: const Text('User Search & Suggestions')),
       body: Padding(
         padding: const EdgeInsets.all(16),

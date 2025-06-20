@@ -1,12 +1,19 @@
 // lib/presentation/screens/matchmaking_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:quiz/core/cubit/match_cubit.dart';
 import 'package:quiz/core/cubit/match_state.dart';
-import 'package:quiz/data/models/question_model.dart'; // Your Question model
+import 'package:quiz/core/services/socket_service.dart';
+import 'package:quiz/core/services/match_service.dart';
+import 'package:quiz/core/services/quiz_api.dart';
+
+import 'package:quiz/data/models/question_model.dart';
+import 'package:quiz/data/models/match_room_model.dart';
+
+import 'package:quiz/presentation/widgets/app_drawer.dart';
 import 'quiz_screen.dart';
 
 class MatchMakingScreen extends StatefulWidget {
@@ -16,12 +23,12 @@ class MatchMakingScreen extends StatefulWidget {
   final int questionCount;
 
   const MatchMakingScreen({
-    super.key,
+    Key? key,
     required this.mode,
     required this.category,
     required this.difficulty,
     required this.questionCount,
-  });
+  }) : super(key: key);
 
   @override
   State<MatchMakingScreen> createState() => _MatchMakingScreenState();
@@ -50,6 +57,7 @@ class _MatchMakingScreenState extends State<MatchMakingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: const CustomDrawer(),
       appBar: AppBar(title: const Text('Matchmaking')),
       body: BlocConsumer<MatchCubit, MatchState>(
         listener: (context, state) {
@@ -60,27 +68,26 @@ class _MatchMakingScreenState extends State<MatchMakingScreen> {
           }
 
           if (state is MatchLoaded && state.matchRoom.status == 'started') {
+            final matchRoom = state.matchRoom;
+
             List<Question> questions;
 
             // Defensive check: if questions are already Question objects, use directly
-            if (state.matchRoom.questions.isNotEmpty &&
-                state.matchRoom.questions.first is Question) {
-              questions = List<Question>.from(state.matchRoom.questions);
+            if (matchRoom.questions.isNotEmpty &&
+                matchRoom.questions.first is Question) {
+              questions = List<Question>.from(matchRoom.questions);
             } else {
-              // Otherwise, parse from JSON maps
-              questions = (state.matchRoom.questions as List<dynamic>)
+              questions = (matchRoom.questions as List<dynamic>)
                   .map((q) => Question.fromJson(q as Map<String, dynamic>))
                   .toList();
             }
 
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (_) => QuizScreen(
-                  questions: questions,
-                  matchRoom: state.matchRoom,
-                ),
-              ),
+            context.goNamed(
+              'quiz',
+              extra: {
+                'questions': questions,
+                'matchRoom': matchRoom,
+              },
             );
           }
         },
@@ -98,7 +105,7 @@ class _MatchMakingScreenState extends State<MatchMakingScreen> {
                   const SizedBox(height: 20),
                   Text(
                     room.status == 'waiting'
-                        ? 'Waiting for opponent... (${room.players.length}/2 joined)'
+                        ? 'Waiting for opponent... (${room.players.length}/${room.capacity} joined)'
                         : 'Match Starting...',
                     style: const TextStyle(fontSize: 18),
                   ),

@@ -18,7 +18,7 @@
     <!-- Notifications (Android 13+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />fl
     <application
-        android:label="quiz"
+        android:label="TrivIQ"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

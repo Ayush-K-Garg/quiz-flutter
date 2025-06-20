@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:quiz/data/models/match_room_model.dart';
 import 'package:quiz/presentation/screens/quiz_screen.dart';
+import 'package:quiz/presentation/widgets/app_drawer.dart';
+
 
 const List<String> categories = [
   'General Knowledge', 'Science', 'Mathematics', 'History', 'Geography',
@@ -155,6 +157,7 @@ class _QuestionSetupScreenState extends State<QuestionSetupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: const CustomDrawer(),
       appBar: AppBar(title: Text('${widget.mode.toUpperCase()} Setup')),
       body: Padding(
         padding: const EdgeInsets.all(16),

@@ -170,23 +170,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
 
-                Center(
-                  child: InkWell(
-                    onTap: () => context.go('/forgot-password'),
-                    borderRadius: BorderRadius.circular(4),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 8, horizontal: 12),
-                      child: Text(
-                        "Forgot Password?",
-                        style: TextStyle(
-                          color: textColor,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+
               ],
             ),
           ),

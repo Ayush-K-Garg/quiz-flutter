@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:quiz/core/services/quiz_api.dart';
+import 'package:quiz/presentation/widgets/app_drawer.dart';
+
 
 class LeaderboardScreen extends StatefulWidget {
   final String roomId;
@@ -39,6 +41,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: const CustomDrawer(),
       appBar: AppBar(title: const Text('Leaderboard')),
       body: loading
           ? const Center(child: CircularProgressIndicator())

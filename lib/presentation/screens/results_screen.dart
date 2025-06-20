@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:quiz/data/models/question_model.dart';
+import 'package:quiz/presentation/widgets/app_drawer.dart';
 
 class ResultScreen extends StatefulWidget {
   final int score;
@@ -46,36 +47,29 @@ class _ResultScreenState extends State<ResultScreen> {
         print('❌ No auth token available');
         throw Exception('No token provided');
       }
-      print('🔑 Using token: $token');
 
       final res = await http.get(
         Uri.parse(url),
         headers: {'Authorization': 'Bearer $token'},
       );
 
-      print('📥 Status Code: ${res.statusCode}');
-      print('📥 Response Body: ${res.body}');
-
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
         if (data is Map<String, dynamic> && data.containsKey('leaderboard')) {
           final lb = List<Map<String, dynamic>>.from(data['leaderboard']);
           lb.sort((a, b) => b['score'].compareTo(a['score']));
-          print('✅ Parsed Leaderboard: $lb');
           setState(() {
             leaderboard = lb;
             loading = false;
           });
         } else {
-          print('⚠️ Invalid leaderboard structure');
           setState(() => loading = false);
         }
       } else {
         throw Exception('❌ Failed to fetch leaderboard. Code: ${res.statusCode}');
       }
-    } catch (e, stackTrace) {
+    } catch (e) {
       print('🚨 Leaderboard fetch error: $e');
-      print('🧵 Stack trace: $stackTrace');
       setState(() => loading = false);
     }
   }
@@ -87,7 +81,6 @@ class _ResultScreenState extends State<ResultScreen> {
 
     if (leaderboard.isEmpty) {
       return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text('No leaderboard data available.'),
           const SizedBox(height: 8),
@@ -103,42 +96,36 @@ class _ResultScreenState extends State<ResultScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.only(bottom: 8.0),
-          child: Text(
-            '🔄 Pull down or tap refresh to update the leaderboard:',
-            style: TextStyle(fontSize: 14, color: Colors.grey),
-          ),
-        ),
         ElevatedButton.icon(
           onPressed: fetchLeaderboard,
           icon: const Icon(Icons.refresh),
           label: const Text('Refresh Leaderboard'),
         ),
         const SizedBox(height: 10),
-        RefreshIndicator(
-          onRefresh: fetchLeaderboard,
-          child: ListView(
-            shrinkWrap: true,
-            physics: const AlwaysScrollableScrollPhysics(),
-            children: leaderboard.asMap().entries.map((entry) {
-              final i = entry.key + 1;
-              final player = entry.value;
-              final username = player['name'] ?? 'Unknown';
-              final photoUrl = player['picture'] ?? '';
-              final score = player['score'] ?? 0;
+        ListView.builder(
+          itemCount: leaderboard.length,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemBuilder: (context, index) {
+            final player = leaderboard[index];
+            final name = player['name'] ?? 'Unknown';
+            final picture = player['picture'] ?? '';
+            final score = player['score'] ?? 0;
 
-              return ListTile(
+            return Card(
+              elevation: 2,
+              margin: const EdgeInsets.symmetric(vertical: 4),
+              child: ListTile(
                 leading: CircleAvatar(
-                  backgroundImage: photoUrl.isNotEmpty
-                      ? NetworkImage(photoUrl)
+                  backgroundImage: picture.isNotEmpty
+                      ? NetworkImage(picture)
                       : const AssetImage('assets/default_avatar.png') as ImageProvider,
                 ),
-                title: Text('$i. $username'),
-                trailing: Text('$score pts'),
-              );
-            }).toList(),
-          ),
+                title: Text('$name'),
+                trailing: Text('$score pts', style: const TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            );
+          },
         ),
       ],
     );
@@ -158,13 +145,15 @@ class _ResultScreenState extends State<ResultScreen> {
           final isCorrect = selected == correct;
 
           return Card(
-            color: isCorrect ? Colors.green[50] : Colors.red[50],
+            elevation: 2,
+            color: isCorrect ? Colors.green.shade50 : Colors.red.shade50,
             margin: const EdgeInsets.symmetric(vertical: 6),
             child: ListTile(
               title: Text(question),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  const SizedBox(height: 4),
                   Text('Your Answer: $selected'),
                   Text('Correct Answer: $correct'),
                 ],
@@ -183,27 +172,33 @@ class _ResultScreenState extends State<ResultScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Quiz Results')),
+      drawer: const CustomDrawer(),
+      appBar: AppBar(
+        title: const Text('Quiz Results'),
+        backgroundColor: const Color(0xFF2C2C54),
+        foregroundColor: Colors.white,
+      ),
+      backgroundColor: const Color(0xFF1E1E3F),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('🎯 Score: ${widget.score} / ${widget.total}',
-                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
             const SizedBox(height: 16),
 
             if (widget.roomId != null) ...[
               const Text('🏆 Final Leaderboard',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
               const SizedBox(height: 10),
               buildLeaderboard(),
-              const Divider(thickness: 1),
+              const Divider(thickness: 1, color: Colors.white24),
+              const SizedBox(height: 16),
             ],
 
-            const SizedBox(height: 10),
             const Text('📋 Question Review',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
             const SizedBox(height: 10),
             buildQuestionReview(),
           ],

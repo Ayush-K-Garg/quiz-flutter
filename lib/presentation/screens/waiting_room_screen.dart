@@ -8,7 +8,8 @@ import 'package:quiz/data/models/match_room_model.dart';
 import 'package:quiz/data/models/question_model.dart';
 import 'quiz_screen.dart';
 import 'package:quiz/core/services/socket_service.dart';
-
+import 'package:quiz/presentation/widgets/app_drawer.dart';
+import 'package:go_router/go_router.dart';
 class WaitingRoomScreen extends StatefulWidget {
   final String roomId;
   final int capacity;
@@ -122,15 +123,14 @@ class _WaitingRoomScreenState extends State<WaitingRoomScreen> {
 
         if (!mounted) return;
 
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => QuizScreen(
-              questions: questions,
-              matchRoom: matchRoom,
-            ),
-          ),
+        context.goNamed(
+          'quiz',
+          extra: {
+            'questions': questions,
+            'matchRoom': matchRoom,
+          },
         );
+
       });
     });
   }
@@ -209,7 +209,8 @@ class _WaitingRoomScreenState extends State<WaitingRoomScreen> {
                     continue;
                   }
 
-                  final question = Question.fromJson(Map<String, dynamic>.from(q));
+                  final question = Question.fromJson(
+                      Map<String, dynamic>.from(q));
                   questions.add(question);
                   print('✅ Q[$i] Parsed successfully: ${question.question}');
                 } catch (e) {
@@ -222,15 +223,14 @@ class _WaitingRoomScreenState extends State<WaitingRoomScreen> {
 
               // Navigate to QuizScreen if safe
               if (mounted) {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => QuizScreen(
-                      questions: questions,
-                      matchRoom: matchRoom,
-                    ),
-                  ),
+                context.goNamed(
+                  'quiz',
+                  extra: {
+                    'questions': questions,
+                    'matchRoom': matchRoom,
+                  },
                 );
+
               }
             } else {
               print('❌ Failed to fetch room data: ${roomRes.statusCode}');
@@ -251,7 +251,8 @@ class _WaitingRoomScreenState extends State<WaitingRoomScreen> {
     super.initState();
     _initializeSocketConnection();
     _refreshStatus();
-    _leaderboardTimer = Timer.periodic(const Duration(seconds: 2), (_) => _refreshStatus());
+    _leaderboardTimer =
+        Timer.periodic(const Duration(seconds: 2), (_) => _refreshStatus());
     _startPollingMatchStatus();
   }
 
@@ -269,13 +270,20 @@ class _WaitingRoomScreenState extends State<WaitingRoomScreen> {
     final canStart = widget.isHost && _joinedCount >= 2;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Waiting Room')),
+      backgroundColor: const Color(0xFF1E1E3F),
+      drawer: const CustomDrawer(),
+      appBar: AppBar(
+        title: const Text('Waiting Room'),
+        backgroundColor: const Color(0xFF2C2C54),
+        foregroundColor: Colors.white,
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            /// ✅ ROOM ID COPY
+
+            /// 📋 ROOM CODE BOX
             GestureDetector(
               onTap: () {
                 Clipboard.setData(ClipboardData(text: widget.roomId));
@@ -287,71 +295,144 @@ class _WaitingRoomScreenState extends State<WaitingRoomScreen> {
                 );
               },
               child: Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(14),
+                margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
-                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.white12,
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.copy, size: 18),
+                    const Icon(Icons.copy, size: 20, color: Colors.white70),
                     const SizedBox(width: 8),
                     Text(
                       'Room Code: ${widget.roomId}',
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
 
-            const SizedBox(height: 16),
-            Text('Players Joined: $_joinedCount / $capacity', style: const TextStyle(fontSize: 18)),
+            Text(
+              '👥 Players Joined: $_joinedCount / $capacity',
+              style: const TextStyle(fontSize: 18, color: Colors.white),
+            ),
             const SizedBox(height: 24),
 
+            /// 🎮 HOST OPTIONS
             if (widget.isHost) ...[
-              DropdownButtonFormField<String>(
-                value: selectedCategory,
-                items: categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-                onChanged: (val) => setState(() => selectedCategory = val!),
-                decoration: const InputDecoration(labelText: 'Category'),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white10,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Column(
+                  children: [
+                    DropdownButtonFormField<String>(
+                      value: selectedCategory,
+                      dropdownColor: const Color(0xFF2C2C54),
+                      style: const TextStyle(color: Colors.white),
+                      decoration: _inputDecoration('Category'),
+                      items: categories
+                          .map((c) =>
+                          DropdownMenuItem(
+                            value: c,
+                            child: Text(
+                                c, style: const TextStyle(color: Colors.white)),
+                          ))
+                          .toList(),
+                      onChanged: (val) =>
+                          setState(() => selectedCategory = val!),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: selectedDifficulty,
+                      dropdownColor: const Color(0xFF2C2C54),
+                      style: const TextStyle(color: Colors.white),
+                      decoration: _inputDecoration('Difficulty'),
+                      items: difficulties
+                          .map((d) =>
+                          DropdownMenuItem(
+                            value: d,
+                            child: Text(
+                                d, style: const TextStyle(color: Colors.white)),
+                          ))
+                          .toList(),
+                      onChanged: (val) =>
+                          setState(() => selectedDifficulty = val!),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      initialValue: selectedAmount.toString(),
+                      keyboardType: TextInputType.number,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: _inputDecoration('Number of Questions'),
+                      onChanged: (val) {
+                        final parsed = int.tryParse(val);
+                        if (parsed != null && parsed > 0) {
+                          setState(() => selectedAmount = parsed);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.play_arrow),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF4A00E0),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 14, horizontal: 28),
+                        textStyle: const TextStyle(fontSize: 16),
+                      ),
+                      onPressed: canStart && !_isStarting ? _startMatch : null,
+                      label: _isStarting
+                          ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white),
+                      )
+                          : const Text('Start Match'),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 12),
-
-              DropdownButtonFormField<String>(
-                value: selectedDifficulty,
-                items: difficulties.map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
-                onChanged: (val) => setState(() => selectedDifficulty = val!),
-                decoration: const InputDecoration(labelText: 'Difficulty'),
-              ),
-              const SizedBox(height: 12),
-
-              TextFormField(
-                initialValue: selectedAmount.toString(),
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Number of Questions'),
-                onChanged: (val) {
-                  final parsed = int.tryParse(val);
-                  if (parsed != null && parsed > 0) {
-                    setState(() => selectedAmount = parsed);
-                  }
-                },
-              ),
-              const SizedBox(height: 24),
-
-              ElevatedButton(
-                onPressed: canStart && !_isStarting ? _startMatch : null,
-                child: _isStarting
-                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Text('Start Match'),
-              ),
-            ] else ...[
-              const SizedBox(height: 24),
-              const Text('Waiting for host to start...', style: TextStyle(fontSize: 16)),
-            ],
+            ] else
+              ...[
+                const SizedBox(height: 24),
+                const Center(
+                  child: Text(
+                    '⌛ Waiting for host to start...',
+                    style: TextStyle(fontSize: 16, color: Colors.white70),
+                  ),
+                ),
+              ],
           ],
         ),
+      ),
+    );
+  }
+
+  InputDecoration _inputDecoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: const TextStyle(color: Colors.white70),
+      filled: true,
+      fillColor: Colors.white12,
+      enabledBorder: OutlineInputBorder(
+        borderSide: const BorderSide(color: Colors.white24),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderSide: const BorderSide(color: Colors.white),
+        borderRadius: BorderRadius.circular(10),
       ),
     );
   }
