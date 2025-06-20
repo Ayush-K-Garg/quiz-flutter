@@ -1,9 +1,44 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
+import 'package:share_plus/share_plus.dart';
+import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
 class CustomDrawer extends StatelessWidget {
   const CustomDrawer({super.key});
+
+  final String apkLink =
+      'https://drive.google.com/drive/folders/15ohVxoWS5C-sy11jBrxi8qS57MatzC8k?usp=sharing';
+
+  Future<void> shareApp() async {
+
+    final message = '''
+Check out TriviQ - The Ultimate Quiz Showdown!
+
+Challenge your friends, practice quizzes in various categories and more!
+
+📲 Download the APK:
+$apkLink
+''';
+
+    try {
+      // Load image bytes from assets
+      final bytes = await rootBundle.load('assets/images/applogo.png');
+
+      // Get temp directory
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/triviq_logo.png');
+
+      // Write image to temp file
+      await file.writeAsBytes(bytes.buffer.asUint8List());
+
+      // Share image + message
+      await Share.shareXFiles([XFile(file.path)], text: message);
+    } catch (e) {
+      print(' Error sharing app: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,8 +78,8 @@ class CustomDrawer extends StatelessWidget {
             icon: Icons.home,
             text: 'Home',
             onTap: () {
-              context.pop(); // close drawer
-              context.go('/mode-selection'); // GoRouter navigation
+              context.pop();
+              context.go('/mode-selection');
             },
           ),
           buildDrawerItem(
@@ -53,7 +88,7 @@ class CustomDrawer extends StatelessWidget {
             text: 'My Profile',
             onTap: () {
               context.pop();
-              context.go('/profile'); // Ensure this route exists
+              context.go('/profile');
             },
           ),
           buildDrawerItem(
@@ -62,7 +97,7 @@ class CustomDrawer extends StatelessWidget {
             text: 'Practice Mode',
             onTap: () {
               context.pop();
-              context.go('/category'); // Ensure this route exists
+              context.go('/category');
             },
           ),
           buildDrawerItem(
@@ -71,7 +106,7 @@ class CustomDrawer extends StatelessWidget {
             text: 'Challenge Mode',
             onTap: () {
               context.pop();
-              context.go('/custom-room-setup'); // Ensure this route exists
+              context.go('/custom-room-setup');
             },
           ),
           buildDrawerItem(
@@ -80,20 +115,33 @@ class CustomDrawer extends StatelessWidget {
             text: 'About App',
             onTap: () {
               context.pop();
-              context.go('/about'); // Ensure this route exists
+              context.go('/about');
             },
           ),
+
+          // 👇 Share option added here
+          buildDrawerItem(
+            context,
+            icon: Icons.share,
+            text: 'Share App',
+            onTap: () {
+              context.pop();
+              shareApp(); // Call share function
+            },
+          ),
+
           const Spacer(),
+
           buildDrawerItem(
             context,
             icon: Icons.logout,
             text: 'Logout',
             onTap: () async {
-              context.pop(); // Close drawer first
+              context.pop();
               await FirebaseAuth.instance.signOut();
               if (!context.mounted) return;
 
-              context.go('/login'); // 👈 Use GoRouter instead of Navigator
+              context.go('/login');
 
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text("🔒 Logged out")),

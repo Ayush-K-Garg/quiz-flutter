@@ -10,6 +10,9 @@ import 'quiz_screen.dart';
 import 'package:quiz/core/services/socket_service.dart';
 import 'package:quiz/presentation/widgets/app_drawer.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
+
+
 class WaitingRoomScreen extends StatefulWidget {
   final String roomId;
   final int capacity;
@@ -400,6 +403,29 @@ class _WaitingRoomScreenState extends State<WaitingRoomScreen> {
                             strokeWidth: 2, color: Colors.white),
                       )
                           : const Text('Start Match'),
+                    ),
+                    const SizedBox(height: 12),
+
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.share),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                      ),
+                      onPressed: () {
+                        Share.share(
+                          '''🎮 Join my TriviQ match!
+
+Room Code: ${widget.roomId}
+
+📲 Install the app from:
+https://drive.google.com/drive/folders/15ohVxoWS5C-sy11jBrxi8qS57MatzC8k?usp=sharing
+
+🔔 Copy the room code and enter it in the app to join the quiz!''',
+                        );
+                      },
+                      label: const Text('Invite Players'),
                     ),
                   ],
                 ),
