@@ -133,7 +133,7 @@ class _QuizScreenState extends State<QuizScreen> {
             ),
             const SizedBox(height: 24),
 
-            // ✅ Styled answer options
+
             ...answers.map((answer) {
               final isSelected = selectedAnswers[currentIndex] == answer;
               return Container(
@@ -161,7 +161,6 @@ class _QuizScreenState extends State<QuizScreen> {
 
             const SizedBox(height: 30),
 
-            // ✅ Styled navigation buttons
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [

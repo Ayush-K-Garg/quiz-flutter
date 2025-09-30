@@ -22,7 +22,7 @@ class WaitingRoomScreen extends StatefulWidget {
     Key? key,
     required this.roomId,
     required this.isHost,
-    this.capacity = 2,
+    this.capacity = 3,
   }) : super(key: key);
 
   @override
@@ -304,24 +304,31 @@ class _WaitingRoomScreenState extends State<WaitingRoomScreen> {
                   color: Colors.white12,
                   borderRadius: BorderRadius.circular(10),
                 ),
+                // FIX: The Row now expands to fill the width
                 child: Row(
-                  mainAxisSize: MainAxisSize.min,
+                  // REMOVED: mainAxisSize: MainAxisSize.min
                   children: [
                     const Icon(Icons.copy, size: 20, color: Colors.white70),
                     const SizedBox(width: 8),
-                    Text(
-                      'Room Code: ${widget.roomId}',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                    // FIX: Expanded allows the text area to grow and fill the remaining space
+                    Expanded(
+                      child: FittedBox(
+                        alignment: Alignment.centerLeft, // Aligns text to the left
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          'Room Code: ${widget.roomId}',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
             ),
-
             Text(
               '👥 Players Joined: $_joinedCount / $capacity',
               style: const TextStyle(fontSize: 18, color: Colors.white),

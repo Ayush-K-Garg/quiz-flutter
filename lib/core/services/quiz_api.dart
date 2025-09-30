@@ -2,9 +2,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class QuizApi {
-  static const String host = 'https://quiz-backend-lnrb.onrender.com'; // Use your backend URL here
+  static const String host = 'https://quiz-backend-lnrb.onrender.com';
 
-  // Fetch questions for practice mode
   Future<List<dynamic>> fetchQuestions({
     String? category,
     String? difficulty,
@@ -28,7 +27,6 @@ class QuizApi {
 
   }
 
-  // Submit answer to match room (multiplayer mode)
   Future<void> submitAnswer({
     required String roomId,
     required String userId,
@@ -52,7 +50,6 @@ class QuizApi {
     }
   }
 
-  // Fetch leaderboard for a match room
   Future<List<dynamic>> getLeaderboard(String roomId) async {
     final uri = Uri.parse('$host/api/leaderboard/$roomId');
     final response = await http.get(uri);

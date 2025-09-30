@@ -17,7 +17,7 @@ class MatchCubit extends Cubit<MatchState> {
     required this.quizApi,
   }) : super(MatchInitial());
 
-  /// Called before joining or creating a room to setup socket events
+
   void _connectToSocket({
     required void Function() onConnected,
     required Map<String, Function(dynamic)> listeners,

@@ -15,7 +15,7 @@ class CustomRoomSetupScreen extends StatefulWidget {
 class _CustomRoomSetupScreenState extends State<CustomRoomSetupScreen> {
   final _formKeyCreate = GlobalKey<FormState>();
   final _formKeyJoin = GlobalKey<FormState>();
-  final TextEditingController _capacityController = TextEditingController(text: '2');
+  final TextEditingController _capacityController = TextEditingController(text: '3');
   final TextEditingController _roomIdController = TextEditingController();
   bool _isLoading = false;
 
@@ -127,7 +127,7 @@ class _CustomRoomSetupScreenState extends State<CustomRoomSetupScreen> {
       backgroundColor: const Color(0xFF1E1E3F),
       drawer: const CustomDrawer(),
       appBar: AppBar(
-        title: const Text('Custom Match Room'),
+        title: const Text('Multiplayer Mode'),
         backgroundColor: const Color(0xFF2C2C54),
         foregroundColor: Colors.white,
       ),

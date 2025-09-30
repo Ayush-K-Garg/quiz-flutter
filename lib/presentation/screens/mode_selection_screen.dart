@@ -42,7 +42,7 @@ class ModeSelectionScreen extends StatelessWidget {
             _buildModeButton(
               context,
               icon: Icons.person_outline,
-              label: "Practice Mode(Single Player)",
+              label: "Single Player(Practice)",
               onPressed: () => _navigateWithMode(context, 'practice'),
               gradientColors: const [Color(0xFF8E2DE2), Color(0xFF4A00E0)],
             ),
@@ -50,7 +50,7 @@ class ModeSelectionScreen extends StatelessWidget {
             _buildModeButton(
               context,
               icon: Icons.group_outlined,
-              label: "Custom Match Room(Multiplayer)",
+              label: "Multiplayer",
               onPressed: () => _navigateWithMode(context, 'custom_room'),
               gradientColors: const [Color(0xFF00B4DB), Color(0xFF0083B0)],
             ),

@@ -1,22 +1,45 @@
 plugins {
     id "com.android.application"
-    // START: FlutterFire Configuration
     id 'com.google.gms.google-services'
-    // END: FlutterFire Configuration
     id "kotlin-android"
     id "dev.flutter.flutter-gradle-plugin"
 }
 
+def keystorePropertiesFile = rootProject.file("key.properties")
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.withInputStream { stream ->
+        keystoreProperties.load(stream)
+    }
+}
+
 android {
-    namespace = "com.example.quiz"
-    compileSdk = 34  // ✅ Modern DSL (do NOT use compileSdkVersion)
-    buildToolsVersion = "34.0.0"
+    namespace = "com.appdevlabs0.triviq"
+
+    // ✅ Correct SDK and Build Tools versions
+    compileSdk = 35
+    buildToolsVersion = "35.0.0"
+
     ndkVersion = flutter.ndkVersion
 
+    signingConfigs {
+        release {
+            if (keystorePropertiesFile.exists()) {
+                storeFile file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            }
+        }
+    }
+
     defaultConfig {
-        applicationId = "com.example.quiz"
+        applicationId = "com.appdevlabs0.triviq"
         minSdk = 21
-        targetSdk = 34  // ✅ Modern DSL (do NOT use targetSdkVersion)
+
+        // ✅ Correct Target SDK version
+        targetSdk = 35
+
         versionCode = 1
         versionName = "1.0"
     }
@@ -34,9 +57,7 @@ android {
         release {
             minifyEnabled false
             shrinkResources false
-
-
-            signingConfig = signingConfigs.debug // TODO: replace for actual release keystore
+            signingConfig signingConfigs.release
         }
     }
 }

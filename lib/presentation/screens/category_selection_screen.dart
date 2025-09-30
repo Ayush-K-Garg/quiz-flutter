@@ -147,7 +147,7 @@ class _CategorySelectionScreenState extends State<CategorySelectionScreen> {
                 ),
                 child: const Center(
                   child: Text(
-                    'Start Matchmaking',
+                    'Start Match',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,

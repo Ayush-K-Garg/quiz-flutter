@@ -65,23 +65,23 @@ class AboutScreen extends StatelessWidget {
             const FeatureItem(text: "Leaderboard and scoring"),
             const SizedBox(height: 24),
             const Text("Developer", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const Text("Ayush Krishna Garg", style: TextStyle(fontSize: 16)),
-            const Text("ECE, NIT JSR'27", style: TextStyle(fontSize: 16)),
+            const Text("AppDevLabs0", style: TextStyle(fontSize: 16)),
+            const Text("", style: TextStyle(fontSize: 16)),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                IconButton(
-                  icon: Image.asset('assets/icons/github.png', height: 28),
-                  tooltip: 'GitHub',
-                  onPressed: () => _launchSmart(context, github),
-                ),
-                IconButton(
-                  icon: Image.asset('assets/icons/linkedin.png', height: 28),
-                  tooltip: 'LinkedIn',
-                  onPressed: () => _launchSmart(context, linkedin),
-                ),
-              ],
-            ),
+            // Row(
+            //   children: [
+            //     IconButton(
+            //       icon: Image.asset('assets/icons/github.png', height: 28),
+            //       tooltip: 'GitHub',
+            //       onPressed: () => _launchSmart(context, github),
+            //     ),
+            //     IconButton(
+            //       icon: Image.asset('assets/icons/linkedin.png', height: 28),
+            //       tooltip: 'LinkedIn',
+            //       onPressed: () => _launchSmart(context, linkedin),
+            //     ),
+            //   ],
+            // ),
             const SizedBox(height: 24),
             const Text("Last updated: June 2025", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 24),

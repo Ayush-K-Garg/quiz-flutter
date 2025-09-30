@@ -25,7 +25,7 @@ class SocketService {
     print("🔌 [SocketService] Connecting to socket server...");
 
     _socket = IO.io(
-      'https://quiz-backend-lnrb.onrender.com', // 👈 Replace with actual server if needed
+      'https://quiz-backend-lnrb.onrender.com',
       <String, dynamic>{
         'transports': ['websocket'],
         'autoConnect': false,

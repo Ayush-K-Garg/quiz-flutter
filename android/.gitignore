@@ -11,3 +11,13 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+# Keystore files
+*.jks
+*.keystore
+*.p12
+upload-keystore.jk
+upload-keystore.jk.old
+
+# Other sensitive files
+local.properties
+
