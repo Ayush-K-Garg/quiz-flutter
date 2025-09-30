@@ -1,5 +1,5 @@
 buildscript {
-    ext.kotlin_version = '1.8.22'
+    ext.kotlin_version = '1.9.24'
     repositories {
         google()
         mavenCentral()
@@ -7,7 +7,7 @@ buildscript {
 
     dependencies {
         // ✅ Correct AGP version for Gradle 8.6
-        classpath 'com.android.tools.build:gradle:8.2.2'
+        classpath 'com.android.tools.build:gradle:8.4.1'
         // ✅ Correct Kotlin version for this AGP
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         // ✅ Your Firebase plugin

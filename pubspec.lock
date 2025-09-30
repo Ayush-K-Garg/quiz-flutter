@@ -459,14 +459,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "8.1.6"
-  flutter_branch_sdk:
-    dependency: "direct main"
-    description:
-      name: flutter_branch_sdk
-      sha256: f04e46f382584f9ad7032828d605c51fe4c9bfc2d5a142cd546e9ff228161bcb
-      url: "https://pub.dev"
-    source: hosted
-    version: "5.1.1"
   flutter_chat_types:
     dependency: transitive
     description:
