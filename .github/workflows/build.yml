@@ -1,0 +1,40 @@
+name: Build Flutter Release AAB
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    name: Build Release AppBundle
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.1'
+
+      - name: Decode keystore
+        run: |
+          echo ${{ secrets.KEYSTORE_BASE64 }} | base64 --decode > android/key.jks
+      - name: Set up signing properties
+        run: |
+          echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" > android/key.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
+          echo "storeFile=key.jks" >> android/key.properties
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build AppBundle
+        run: flutter build appbundle --release
+
+      - name: Upload AAB
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-release.aab
+          path: build/app/outputs/bundle/release/app-release.aab
